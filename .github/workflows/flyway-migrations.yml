@@ -2,21 +2,17 @@ name: Flyway Migration Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   flyway:
     runs-on: ubuntu-latest
-
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: rootpass
-          MYSQL_DATABASE: subscribers
-          MYSQL_USER: subuser
-          MYSQL_PASSWORD: subpass
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: demo
         ports:
           - 3306:3306
         options: >-
@@ -25,15 +21,22 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_NAME: demo
+      DB_USER: root
+      DB_PASSWORD: root
+
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Wait for MySQL to be ready
         run: |
           for i in {1..30}; do
-            if mysql -h 127.0.0.1 -P 3306 -usubuser -psubpass -e "SELECT 1;" subscribers; then
-              echo "MySQL is ready"
+            if mysqladmin ping -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" --silent; then
+              echo "MySQL is up!"
               break
             fi
             echo "Waiting for MySQL..."
@@ -41,14 +44,20 @@ jobs:
           done
 
       - name: Run Flyway migrations
-        run: |
-          docker run --rm \
-            --network host \
-            -v ${{ github.workspace }}/migrations_incremental:/flyway/sql \
-            -v ${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf \
-            flyway/flyway migrate
+        uses: flyway/flyway-action@v2
+        with:
+          url: jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME
+          user: $DB_USER
+          password: $DB_PASSWORD
+          locations: filesystem:./sql
 
-      - name: Run unit test to verify 'status' column exists
-        run: |
-          pip install mysql-connector-python
-          python3 test_subscribers.py
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install mysql-connector-python
+
+      - name: Run unit tests
+        run: python3 test_subscribers.py
