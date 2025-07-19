@@ -1,29 +1,31 @@
-- name: bootstrap mysql
+- name: Set up MySQL and run initial Flyway migration
   hosts: localhost
-  gather_facts: false
+  connection: local
+  gather_facts: no
+
   tasks:
-    - name: docker compose up
-      community.docker.docker_compose_v2:
-        project_src: .
-        files:
-        - mysql-adminer.yml
-        state: present
-    - name: Install mysql-client
-      ansible.builtin.package:
-        name: mysql-client
-        update_cache: yes
-        state: present
-      become: yes
-    - name: Install mysql python connectors
-      ansible.builtin.pip:
-        name:
-          - pymysql
-          - mysql-connector-python
-    - name: install nektos/act
-      ansible.builtin.shell: curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
-      args:
-        creates: bin/act
+    - name: Ensure Docker is running
+      shell: |
+        sudo systemctl start docker || true
 
+    - name: Start MySQL container
+      shell: |
+        docker run -d --name flyway-mysql \
+          -e MYSQL_ROOT_PASSWORD=rootpass \
+          -e MYSQL_DATABASE=subscribers \
+          -e MYSQL_USER=subuser \
+          -e MYSQL_PASSWORD=subpass \
+          -p 3306:3306 \
+          mysql:5.7
 
+    - name: Wait for MySQL to be ready
+      wait_for:
+        host: 127.0.0.1
+        port: 3306
+        delay: 10
+        timeout: 60
+        state: started
 
-
+    - name: Run Flyway migration locally using nektos/act
+      shell: |
+        act -j flyway-init || echo "Run GitHub Actions manually if act not available"

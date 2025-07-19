@@ -1,15 +1,9 @@
-- name: remove mysql
+- name: Tear down MySQL container
   hosts: localhost
-  gather_facts: false
+  connection: local
+  gather_facts: no
+
   tasks:
-    - name: docker compose down
-      community.docker.docker_compose_v2:
-        project_src: .
-        files:
-        - mysql-adminer.yml
-        state: absent
-    - name: Remove mysql-client
-      ansible.builtin.package:
-        name: mysql-client
-        state: absent
-      become: yes
+    - name: Stop and remove MySQL container
+      shell: |
+        docker rm -f flyway-mysql || echo "MySQL container not found or already removed"
