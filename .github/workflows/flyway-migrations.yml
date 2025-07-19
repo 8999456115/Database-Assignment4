@@ -1,4 +1,4 @@
-name: Flyway Migrations
+name: Flyway Migration Pipeline
 
 on:
   push:
@@ -6,29 +6,49 @@ on:
       - main
 
 jobs:
-  migrate:
+  flyway:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: subscribers
+          MYSQL_USER: subuser
+          MYSQL_PASSWORD: subpass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker (if needed)
-        uses: docker/setup-buildx-action@v2
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            if mysql -h 127.0.0.1 -P 3306 -usubuser -psubpass -e "SELECT 1;" subscribers; then
+              echo "MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL..."
+            sleep 2
+          done
 
-      - name: Run initial migrations
+      - name: Run Flyway migrations
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}/sql:/flyway/sql \
-            -v ${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf \
-            flyway/flyway migrate
-
-      - name: Run incremental migrations
-        run: |
-          docker run --rm \
+            --network host \
             -v ${{ github.workspace }}/migrations_incremental:/flyway/sql \
             -v ${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf \
             flyway/flyway migrate
 
-      - name: Deployment complete message
-        run: echo "Flyway migrations completed successfully!"
+      - name: Run unit test to verify 'status' column exists
+        run: |
+          pip install mysql-connector-python
+          python3 test_subscribers.py
