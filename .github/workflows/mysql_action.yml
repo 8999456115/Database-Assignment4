@@ -1,29 +1,57 @@
-name: Mysql actions demo
-run-name: ${{ github.actor }} is testing out Mysql GitHub Actions 🚀
+name: MySQL Database Setup Demo
+run-name: ${{ github.actor }} is testing out MySQL GitHub Actions 🚀
+
 on: [push]
+
 jobs:
   setup_mysql_database:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Start MySQL container
+        run: |
+          docker run -d \
+            --name mysql-demo-container \
+            -e MYSQL_ROOT_PASSWORD=Secret5555 \
+            -e MYSQL_DATABASE=flyway_test \
+            -p 3306:3306 \
+            mysql:8.0
+
+      - name: Wait for MySQL to be ready
+        run: |
+          timeout 60 bash -c 'until docker exec mysql-demo-container mysqladmin ping -h localhost -u root -pSecret5555 --silent; do sleep 1; done'
 
       - name: Install MySQL client
         run: sudo apt-get update && sudo apt-get install -y mysql-client
 
       - name: Deploy to Database
         env:
-          DB_HOST: ${{ secrets.DB_HOST || '127.0.0.1' }} 
-          DB_USER: ${{ secrets.DB_ADMIN_USER || 'root' }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD  || 'Secret5555'}}
-          DB_NAME: ${{ secrets.DB_NAME || 'mysql' }}
-        run: mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < schema_changes.sql
-      - name: pull flyway
-        run: docker pull redgate/flyway
-      - name: Run migrations
-        env:
-          DB_HOST: ${{ secrets.DB_HOST || '172.17.0.1' }} 
-          DB_USER: ${{ secrets.DB_ADMIN_USER || 'root' }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD  || 'Secret5555'}}
-          REPO_NAME: ${{ github.event.repository.name || 'PROG8850flyway'}}
-        run: docker run --rm -v "/workspaces/$REPO_NAME/migrations:/flyway/sql" redgate/flyway -user=$DB_USER -password=$DB_PASSWORD -url=jdbc:mysql://$DB_HOST:3306/flyway_test migrate
+          DB_HOST: localhost
+          DB_USER: root
+          DB_PASSWORD: Secret5555
+          DB_NAME: flyway_test
+        run: |
+          if [ -f schema_changes.sql ]; then
+            mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < schema_changes.sql
+          else
+            echo "schema_changes.sql not found, skipping database deployment"
+          fi
+
+      - name: Run Flyway migrations
+        run: |
+          docker run --rm \
+            --network container:mysql-demo-container \
+            -v ${{ github.workspace }}/migrations:/flyway/sql \
+            flyway/flyway:9-alpine \
+            -url=jdbc:mysql://localhost:3306/flyway_test?allowPublicKeyRetrieval=true&useSSL=false \
+            -user=root \
+            -password=Secret5555 \
+            migrate
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker stop mysql-demo-container || true
+          docker rm mysql-demo-container || true
