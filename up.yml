@@ -6,7 +6,11 @@
     - name: Start MySQL container
       community.docker.docker_container:
         name: database-assignment4-db-1
+<<<<<<< HEAD
         image: mysql:8.0
+=======
+        image: mysql:5.7
+>>>>>>> f7444b639cdd3cfdaccd957c0f01d62b7dce86e0
         state: started
         restart_policy: unless-stopped
         env:
@@ -17,6 +21,7 @@
         published_ports:
           - "3306:3306"
 
+<<<<<<< HEAD
     - name: Wait for MySQL to be ready
       wait_for:
         host: localhost
@@ -31,3 +36,12 @@
         DB_USER: subuser
         DB_PASSWORD: subpass
         DB_NAME: subscribers
+=======
+    - name: Run initial Flyway migrations using docker
+      shell: |
+        docker run --rm \
+          --network container:database-assignment4-db-1 \
+          -v {{ playbook_dir }}/sql:/flyway/sql \
+          -v {{ playbook_dir }}/flyway.conf:/flyway/conf/flyway.conf \
+          flyway/flyway migrate
+>>>>>>> f7444b639cdd3cfdaccd957c0f01d62b7dce86e0
