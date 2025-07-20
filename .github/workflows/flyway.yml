@@ -83,8 +83,12 @@ jobs:
 
     - name: Run Database Tests
       run: |
-        pip install mysql-connector-python
-        python test_subscribers.py
+        echo "Installing Python and MySQL connector..."
+        docker exec database-assignment4-db-1 apt-get update -y
+        docker exec database-assignment4-db-1 apt-get install -y python3 python3-pip
+        docker exec database-assignment4-db-1 pip3 install mysql-connector-python
+        echo "Running database tests..."
+        docker exec database-assignment4-db-1 python3 test_subscribers.py
 
     - name: Deployment Complete
       run: |

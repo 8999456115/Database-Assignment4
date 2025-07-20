@@ -5,7 +5,7 @@ import time
 
 class TestSubscribersDB(unittest.TestCase):
     def setUp(self):
-        # Get environment variables or use defaults
+        # Get environment variables or use defaults for container connection
         self.host = os.getenv('DB_HOST', 'localhost')
         self.user = os.getenv('DB_USER', 'root')
         self.password = os.getenv('DB_PASSWORD', '')  # Root has no password in container
@@ -19,24 +19,33 @@ class TestSubscribersDB(unittest.TestCase):
                     host=self.host,
                     user=self.user,
                     password=self.password,
-                    database=self.database
+                    database=self.database,
+                    port=3306,
+                    auth_plugin='mysql_native_password'
                 )
                 self.cursor = self.conn.cursor()
+                print(f"✅ Successfully connected to database: {self.database}")
                 break
             except mysql.connector.Error as e:
+                print(f"❌ Connection attempt {attempt + 1} failed: {e}")
                 if attempt == max_retries - 1:
                     raise e
                 time.sleep(2 ** attempt)
         
         # Clean test data before each test
-        self.cursor.execute("DELETE FROM subscriber WHERE email LIKE 'testuser%@example.com'")
-        self.conn.commit()
+        try:
+            self.cursor.execute("DELETE FROM subscriber WHERE email LIKE 'testuser%@example.com'")
+            self.conn.commit()
+            print("✅ Test data cleaned")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not clean test data: {e}")
 
     def tearDown(self):
         if hasattr(self, 'cursor'):
             self.cursor.close()
         if hasattr(self, 'conn'):
             self.conn.close()
+        print("✅ Database connection closed")
 
     def test_create_subscriber(self):
         """Test creating a new subscriber"""
@@ -49,6 +58,7 @@ class TestSubscribersDB(unittest.TestCase):
         result = self.cursor.fetchone()
         self.assertIsNotNone(result)
         self.assertEqual(result[0], email)
+        print(f"✅ Created subscriber: {email}")
 
     def test_read_subscriber(self):
         """Test reading subscriber data"""
@@ -65,6 +75,7 @@ class TestSubscribersDB(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertEqual(result[0], email)
         self.assertEqual(result[1], name)
+        print(f"✅ Read subscriber: {email}")
 
     def test_update_subscriber(self):
         """Test updating subscriber information"""
@@ -85,6 +96,7 @@ class TestSubscribersDB(unittest.TestCase):
         result = self.cursor.fetchone()
         self.assertIsNotNone(result)
         self.assertEqual(result[0], updated_name)
+        print(f"✅ Updated subscriber: {email}")
 
     def test_delete_subscriber(self):
         """Test deleting a subscriber"""
@@ -105,6 +117,7 @@ class TestSubscribersDB(unittest.TestCase):
         # Verify it was deleted
         self.cursor.execute("SELECT * FROM subscriber WHERE email = %s", (email,))
         self.assertIsNone(self.cursor.fetchone())
+        print(f"✅ Deleted subscriber: {email}")
 
     def test_unique_email_constraint(self):
         """Test that email addresses must be unique"""
@@ -118,6 +131,7 @@ class TestSubscribersDB(unittest.TestCase):
         with self.assertRaises(mysql.connector.IntegrityError):
             self.cursor.execute("INSERT INTO subscriber (email) VALUES (%s)", (email,))
             self.conn.commit()
+        print(f"✅ Verified unique constraint for: {email}")
 
     def test_list_all_subscribers(self):
         """Test listing all subscribers"""
@@ -141,6 +155,7 @@ class TestSubscribersDB(unittest.TestCase):
         result_emails = [row[0] for row in results]
         for email in test_emails:
             self.assertIn(email, result_emails)
+        print(f"✅ Listed {len(test_emails)} subscribers")
 
 if __name__ == '__main__':
     unittest.main()
