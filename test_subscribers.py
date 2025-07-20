@@ -8,7 +8,7 @@ class TestSubscribersDB(unittest.TestCase):
         # Get environment variables or use defaults for container connection
         self.host = os.getenv('DB_HOST', 'localhost')
         self.user = os.getenv('DB_USER', 'root')
-        self.password = os.getenv('DB_PASSWORD', '')  # Root has no password in container
+        self.password = os.getenv('DB_PASSWORD', 'root123')  # Use the password from MySQL container
         self.database = os.getenv('DB_NAME', 'subscribers')
         
         # Retry connection with exponential backoff
