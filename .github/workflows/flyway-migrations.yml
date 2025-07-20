@@ -48,8 +48,9 @@ jobs:
 
     - name: Run Flyway migrations using Docker
       run: |
+        echo "Running Flyway migrations..."
         docker run --rm \
-          --network container:mysql-demo \
+          --network host \
           -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
           -v "${{ github.workspace }}/flyway_demo.conf:/flyway/conf/flyway.conf" \
           flyway/flyway:9-alpine \
@@ -57,6 +58,7 @@ jobs:
 
     - name: Verify migration
       run: |
+        echo "Verifying migration..."
         docker exec mysql-demo mysql -u root subscribers_db -e "SHOW TABLES;"
 
     - name: Cleanup

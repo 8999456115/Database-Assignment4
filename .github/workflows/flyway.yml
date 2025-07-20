@@ -41,11 +41,20 @@ jobs:
         echo "Checking available databases:"
         docker exec database-assignment4-db-1 mysql -u root -e "SHOW DATABASES;"
 
+    - name: Debug migration files
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Listing migration files:"
+        ls -la migrations/init/
+        ls -la migrations/incremental/
+
     - name: Run Initial Flyway Migrations
       run: |
+        echo "Running initial migrations..."
         docker run --rm \
-          --network container:database-assignment4-db-1 \
-          -v ${{ github.workspace }}/migrations/init:/flyway/sql \
+          --network host \
+          -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
           flyway/flyway:9-alpine \
           -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
           -user=root \
@@ -53,13 +62,19 @@ jobs:
 
     - name: Run Incremental Flyway Migrations
       run: |
+        echo "Running incremental migrations..."
         docker run --rm \
-          --network container:database-assignment4-db-1 \
-          -v ${{ github.workspace }}/migrations/incremental:/flyway/sql \
+          --network host \
+          -v "${{ github.workspace }}/migrations/incremental:/flyway/sql" \
           flyway/flyway:9-alpine \
           -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
           -user=root \
           migrate
+
+    - name: Verify migrations
+      run: |
+        echo "Verifying migrations..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "SHOW TABLES;"
 
     - name: Run Database Tests
       run: |
