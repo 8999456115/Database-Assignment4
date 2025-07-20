@@ -37,12 +37,14 @@ jobs:
       run: |
         docker run --rm \
           --network container:mysql-demo \
-          -v ${{ github.workspace }}/migrations/init:/flyway/sql \
-          flyway/flyway:10 \
-          -url=jdbc:mysql://localhost:3306/subscribers_db?allowPublicKeyRetrieval=true&useSSL=false \
-          -user=root \
-          -password=root \
+          -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
+          -v "${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf" \
+          flyway/flyway:9-alpine \
           migrate
+
+    - name: Verify migration
+      run: |
+        docker exec mysql-demo mysql -u root -proot subscribers_db -e "SHOW TABLES;"
 
     - name: Cleanup
       if: always()
