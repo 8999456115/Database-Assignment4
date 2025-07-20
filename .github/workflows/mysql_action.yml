@@ -27,14 +27,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y mysql-client
 
       - name: Deploy to Database
-        env:
-          DB_HOST: localhost
-          DB_USER: root
-          DB_PASSWORD: Secret5555
-          DB_NAME: flyway_test
         run: |
           if [ -f schema_changes.sql ]; then
-            mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < schema_changes.sql
+            docker exec mysql-demo-container mysql -u root -pSecret5555 flyway_test < schema_changes.sql
           else
             echo "schema_changes.sql not found, skipping database deployment"
           fi
