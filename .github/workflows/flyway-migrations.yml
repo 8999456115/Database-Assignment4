@@ -32,6 +32,9 @@ jobs:
       run: |
         echo "Checking MySQL container status:"
         docker ps
+        echo "Getting MySQL container IP:"
+        MYSQL_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql-demo)
+        echo "MySQL IP: $MYSQL_IP"
         echo "Checking MySQL logs:"
         docker logs mysql-demo
         echo "Testing MySQL connection with root (no password):"
@@ -49,11 +52,15 @@ jobs:
     - name: Run Flyway migrations using Docker
       run: |
         echo "Running Flyway migrations..."
+        MYSQL_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql-demo)
+        echo "Using MySQL IP: $MYSQL_IP"
         docker run --rm \
           --network host \
           -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
           -v "${{ github.workspace }}/flyway_demo.conf:/flyway/conf/flyway.conf" \
           flyway/flyway:9-alpine \
+          -url=jdbc:mysql://$MYSQL_IP:3306/subscribers_db?allowPublicKeyRetrieval=true&useSSL=false \
+          -user=root \
           migrate
 
     - name: Verify migration
