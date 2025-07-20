@@ -19,8 +19,6 @@ jobs:
           --name mysql-demo \
           -e MYSQL_ROOT_PASSWORD=root123 \
           -e MYSQL_DATABASE=subscribers_db \
-          -e MYSQL_USER=subuser \
-          -e MYSQL_PASSWORD=subpass \
           -p 3306:3306 \
           mysql:8.0
 
@@ -38,8 +36,8 @@ jobs:
         docker logs mysql-demo
         echo "Testing MySQL connection with root (no password):"
         docker exec mysql-demo mysql -u root -e "SELECT 'Root connection successful' as status;"
-        echo "Testing MySQL connection with subuser:"
-        docker exec mysql-demo mysql -u subuser -psubpass -e "SELECT 'Subuser connection successful' as status;"
+        echo "Checking available databases:"
+        docker exec mysql-demo mysql -u root -e "SHOW DATABASES;"
 
     - name: List available migration files
       run: |

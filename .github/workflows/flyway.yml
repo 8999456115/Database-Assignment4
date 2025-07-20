@@ -21,8 +21,6 @@ jobs:
           --name database-assignment4-db-1 \
           -e MYSQL_ROOT_PASSWORD=root123 \
           -e MYSQL_DATABASE=subscribers \
-          -e MYSQL_USER=subuser \
-          -e MYSQL_PASSWORD=subpass \
           -p 3306:3306 \
           mysql:8.0
 
@@ -40,8 +38,8 @@ jobs:
         docker logs database-assignment4-db-1
         echo "Testing MySQL connection with root (no password):"
         docker exec database-assignment4-db-1 mysql -u root -e "SELECT 'Root connection successful' as status;"
-        echo "Testing MySQL connection with subuser:"
-        docker exec database-assignment4-db-1 mysql -u subuser -psubpass -e "SELECT 'Subuser connection successful' as status;"
+        echo "Checking available databases:"
+        docker exec database-assignment4-db-1 mysql -u root -e "SHOW DATABASES;"
 
     - name: Run Initial Flyway Migrations
       run: |

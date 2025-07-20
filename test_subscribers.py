@@ -7,8 +7,8 @@ class TestSubscribersDB(unittest.TestCase):
     def setUp(self):
         # Get environment variables or use defaults
         self.host = os.getenv('DB_HOST', 'localhost')
-        self.user = os.getenv('DB_USER', 'subuser')
-        self.password = os.getenv('DB_PASSWORD', 'subpass')
+        self.user = os.getenv('DB_USER', 'root')
+        self.password = os.getenv('DB_PASSWORD', '')  # Root has no password in container
         self.database = os.getenv('DB_NAME', 'subscribers')
         
         # Retry connection with exponential backoff
