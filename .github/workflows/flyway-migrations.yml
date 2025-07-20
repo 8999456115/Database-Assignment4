@@ -57,9 +57,8 @@ jobs:
         docker run --rm \
           --network flyway-network \
           -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
+          -v "${{ github.workspace }}/flyway_demo_simple.conf:/flyway/conf/flyway.conf" \
           flyway/flyway:9-alpine \
-          -url=jdbc:mysql://mysql-demo:3306/subscribers_db?allowPublicKeyRetrieval=true&useSSL=false \
-          -user=root \
           migrate
 
     - name: Verify migration
