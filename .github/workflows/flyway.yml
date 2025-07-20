@@ -69,9 +69,17 @@ jobs:
     - name: Run Incremental Migrations
       run: |
         echo "Running incremental migrations..."
-        echo "Step 1: Adding name column..."
-        docker exec database-assignment4-db-1 mysql -u root subscribers -e "ALTER TABLE subscriber ADD COLUMN IF NOT EXISTS name VARCHAR(255);" || echo "Column addition failed"
-        echo "Step 2: Verifying updated table structure..."
+        echo "Step 1: Checking if name column exists..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "SELECT COUNT(*) as column_exists FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'subscribers' AND TABLE_NAME = 'subscriber' AND COLUMN_NAME = 'name';"
+        echo "Step 2: Adding name column if it doesn't exist..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "
+          SET @column_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'subscribers' AND TABLE_NAME = 'subscriber' AND COLUMN_NAME = 'name');
+          SET @sql = IF(@column_exists = 0, 'ALTER TABLE subscriber ADD COLUMN name VARCHAR(255)', 'SELECT \"Column name already exists\" as message');
+          PREPARE stmt FROM @sql;
+          EXECUTE stmt;
+          DEALLOCATE PREPARE stmt;
+        " || echo "Column addition failed"
+        echo "Step 3: Verifying updated table structure..."
         docker exec database-assignment4-db-1 mysql -u root subscribers -e "DESCRIBE subscriber;" || echo "Table description failed"
         echo "Incremental migrations completed!"
 
