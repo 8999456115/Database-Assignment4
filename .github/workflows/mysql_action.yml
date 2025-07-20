@@ -41,8 +41,8 @@ jobs:
             -v ${{ github.workspace }}/migrations:/flyway/sql \
             flyway/flyway:9-alpine \
             -url=jdbc:mysql://localhost:3306/flyway_test?allowPublicKeyRetrieval=true&useSSL=false \
-            -user=root \
-            -password=Secret5555 \
+            -user root \
+            -password Secret5555 \
             migrate
 
       - name: Cleanup
