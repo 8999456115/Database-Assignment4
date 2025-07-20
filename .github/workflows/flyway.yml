@@ -30,21 +30,36 @@ jobs:
       run: |
         timeout 60 bash -c 'until docker exec database-assignment4-db-1 mysqladmin ping -h localhost -u root -prootpass --silent; do sleep 1; done'
 
+    - name: Debug MySQL container
+      run: |
+        echo "Checking MySQL container status:"
+        docker ps
+        echo "Checking MySQL logs:"
+        docker logs database-assignment4-db-1
+        echo "Testing MySQL connection:"
+        docker exec database-assignment4-db-1 mysql -u root -prootpass -e "SELECT 1;"
+
     - name: Run Initial Flyway Migrations
       run: |
         docker run --rm \
           --network container:database-assignment4-db-1 \
           -v ${{ github.workspace }}/migrations/init:/flyway/sql \
-          -v ${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf \
-          flyway/flyway:9-alpine migrate
+          flyway/flyway:9-alpine \
+          -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
+          -user=root \
+          -password=rootpass \
+          migrate
 
     - name: Run Incremental Flyway Migrations
       run: |
         docker run --rm \
           --network container:database-assignment4-db-1 \
           -v ${{ github.workspace }}/migrations/incremental:/flyway/sql \
-          -v ${{ github.workspace }}/flyway_incremental.conf:/flyway/conf/flyway.conf \
-          flyway/flyway:9-alpine migrate
+          flyway/flyway:9-alpine \
+          -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
+          -user=root \
+          -password=rootpass \
+          migrate
 
     - name: Run Database Tests
       run: |
