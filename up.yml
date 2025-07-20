@@ -1,0 +1,33 @@
+---
+- name: Setup MySQL environment and run initial migrations
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Start MySQL container
+      community.docker.docker_container:
+        name: database-assignment4-db-1
+        image: mysql:8.0
+        state: started
+        restart_policy: unless-stopped
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: subscribers
+          MYSQL_USER: subuser
+          MYSQL_PASSWORD: subpass
+        published_ports:
+          - "3306:3306"
+
+    - name: Wait for MySQL to be ready
+      wait_for:
+        host: localhost
+        port: 3306
+        timeout: 60
+
+    - name: Run initial Flyway migrations using nektos/act
+      shell: |
+        act -W .github/workflows/flyway.yml --env-file .env
+      environment:
+        DB_HOST: localhost
+        DB_USER: subuser
+        DB_PASSWORD: subpass
+        DB_NAME: subscribers

@@ -1,0 +1,1 @@
+ALTER TABLE subscriber ADD COLUMN name VARCHAR(255);

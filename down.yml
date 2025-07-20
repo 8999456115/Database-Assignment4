@@ -1,0 +1,14 @@
+---
+- name: Remove MySQL environment
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Stop MySQL container
+      community.docker.docker_container:
+        name: database-assignment4-db-1
+        state: stopped
+
+    - name: Remove MySQL container
+      community.docker.docker_container:
+        name: database-assignment4-db-1
+        state: absent

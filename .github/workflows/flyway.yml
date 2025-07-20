@@ -1,0 +1,65 @@
+name: Flyway Database Migrations
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Start MySQL container
+      run: |
+        docker run -d \
+          --name database-assignment4-db-1 \
+          -e MYSQL_ROOT_PASSWORD=rootpass \
+          -e MYSQL_DATABASE=subscribers \
+          -e MYSQL_USER=subuser \
+          -e MYSQL_PASSWORD=subpass \
+          -p 3306:3306 \
+          mysql:8.0
+
+    - name: Wait for MySQL to be ready
+      run: |
+        timeout 60 bash -c 'until docker exec database-assignment4-db-1 mysqladmin ping -h localhost -u root -prootpass --silent; do sleep 1; done'
+
+    - name: Run Initial Flyway Migrations
+      run: |
+        docker run --rm \
+          --network container:database-assignment4-db-1 \
+          -v ${{ github.workspace }}/migrations/init:/flyway/sql \
+          -v ${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf \
+          flyway/flyway:9-alpine migrate
+
+    - name: Run Incremental Flyway Migrations
+      run: |
+        docker run --rm \
+          --network container:database-assignment4-db-1 \
+          -v ${{ github.workspace }}/migrations/incremental:/flyway/sql \
+          -v ${{ github.workspace }}/flyway_incremental.conf:/flyway/conf/flyway.conf \
+          flyway/flyway:9-alpine migrate
+
+    - name: Run Database Tests
+      run: |
+        pip install mysql-connector-python
+        python test_subscribers.py
+
+    - name: Deployment Complete
+      run: |
+        echo "✅ Database deployment completed successfully!"
+        echo "📊 Initial migrations: Applied"
+        echo "🔄 Incremental migrations: Applied"
+        echo "🧪 Tests: Passed"
+
+    - name: Cleanup
+      if: always()
+      run: |
+        docker stop database-assignment4-db-1 || true
+        docker rm database-assignment4-db-1 || true

@@ -1,0 +1,13 @@
+- name: Run Flyway migrations using Docker
+  run: |
+    docker run --rm \
+      -v ${{ github.workspace }}/sql:/flyway/sql \
+      flyway/flyway:10 \
+      -url=jdbc:mysql://localhost:3306/${{ env.DB_NAME }} \
+      -user=${{ env.DB_USER }} \
+      -password=${{ env.DB_PASSWORD }} \
+      migrate
+  env:
+    DB_USER: root
+    DB_PASSWORD: root
+    DB_NAME: subscribers_db
