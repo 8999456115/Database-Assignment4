@@ -22,13 +22,12 @@ jobs:
           -e MYSQL_USER=subuser \
           -e MYSQL_PASSWORD=subpass \
           -p 3306:3306 \
-          mysql:8.0 \
-          --default-authentication-plugin=mysql_native_password
+          mysql:8.0
 
     - name: Wait for MySQL to be ready
       run: |
         echo "Waiting for MySQL to be ready..."
-        timeout 120 bash -c 'until docker exec mysql-demo mysqladmin ping -h localhost -u root -proot123 --silent; do echo "Waiting..."; sleep 2; done'
+        timeout 120 bash -c 'until docker exec mysql-demo mysqladmin ping -h localhost -u root --silent; do echo "Waiting..."; sleep 2; done'
         echo "MySQL is ready!"
 
     - name: Debug MySQL container
@@ -37,8 +36,8 @@ jobs:
         docker ps
         echo "Checking MySQL logs:"
         docker logs mysql-demo
-        echo "Testing MySQL connection with root:"
-        docker exec mysql-demo mysql -u root -proot123 -e "SELECT 'Root connection successful' as status;"
+        echo "Testing MySQL connection with root (no password):"
+        docker exec mysql-demo mysql -u root -e "SELECT 'Root connection successful' as status;"
         echo "Testing MySQL connection with subuser:"
         docker exec mysql-demo mysql -u subuser -psubpass -e "SELECT 'Subuser connection successful' as status;"
 
@@ -60,7 +59,7 @@ jobs:
 
     - name: Verify migration
       run: |
-        docker exec mysql-demo mysql -u root -proot123 subscribers_db -e "SHOW TABLES;"
+        docker exec mysql-demo mysql -u root subscribers_db -e "SHOW TABLES;"
 
     - name: Cleanup
       if: always()
