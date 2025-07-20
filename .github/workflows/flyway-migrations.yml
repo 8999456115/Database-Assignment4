@@ -26,6 +26,10 @@ jobs:
       run: |
         timeout 60 bash -c 'until docker exec mysql-demo mysqladmin ping -h localhost -u root -proot --silent; do sleep 1; done'
 
+    - name: Test MySQL connection
+      run: |
+        docker exec mysql-demo mysql -u root -proot -e "SELECT 1;"
+
     - name: List available migration files
       run: |
         echo "Available migration files:"
@@ -38,7 +42,7 @@ jobs:
         docker run --rm \
           --network container:mysql-demo \
           -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
-          -v "${{ github.workspace }}/flyway.conf:/flyway/conf/flyway.conf" \
+          -v "${{ github.workspace }}/flyway_demo.conf:/flyway/conf/flyway.conf" \
           flyway/flyway:9-alpine \
           migrate
 
