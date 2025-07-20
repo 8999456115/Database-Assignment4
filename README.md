@@ -223,8 +223,5 @@ If you encounter connection errors:
 
 ## Repository Link
 
-[Link to your repository here]
+https://github.com/8999456115/Database-Assignment4.git
 
-## PDF Submission
-
-[Attach your PDF with answers to Question 1 here]
