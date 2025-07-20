@@ -26,6 +26,13 @@ jobs:
       - name: Install MySQL client
         run: sudo apt-get update && sudo apt-get install -y mysql-client
 
+      - name: Debug migration files
+        run: |
+          echo "Listing migration files:"
+          ls -la migrations/
+          ls -la migrations/init/
+          ls -la migrations/incremental/
+
       - name: Deploy to Database
         run: |
           if [ -f schema_changes.sql ]; then
@@ -38,11 +45,9 @@ jobs:
         run: |
           docker run --rm \
             --network container:mysql-demo-container \
-            -v ${{ github.workspace }}/migrations:/flyway/sql \
+            -v ${{ github.workspace }}/migrations/init:/flyway/sql \
+            -v ${{ github.workspace }}/flyway_mysql.conf:/flyway/conf/flyway.conf \
             flyway/flyway:9-alpine \
-            -url=jdbc:mysql://localhost:3306/flyway_test?allowPublicKeyRetrieval=true&useSSL=false \
-            -user root \
-            -password Secret5555 \
             migrate
 
       - name: Cleanup
