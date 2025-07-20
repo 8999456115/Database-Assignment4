@@ -34,8 +34,6 @@ jobs:
       run: |
         echo "Checking MySQL container status:"
         docker ps
-        echo "Getting MySQL container IP:"
-        docker inspect database-assignment4-db-1 | grep IPAddress
         echo "Checking MySQL logs:"
         docker logs database-assignment4-db-1
         echo "Testing MySQL connection with root (no password):"
@@ -55,10 +53,10 @@ jobs:
       run: |
         echo "Running initial migrations..."
         docker run --rm \
-          --network host \
+          --link database-assignment4-db-1:mysql \
           -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
           flyway/flyway:9-alpine \
-          -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
+          -url=jdbc:mysql://mysql:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
           -user=root \
           migrate
 
@@ -66,10 +64,10 @@ jobs:
       run: |
         echo "Running incremental migrations..."
         docker run --rm \
-          --network host \
+          --link database-assignment4-db-1:mysql \
           -v "${{ github.workspace }}/migrations/incremental:/flyway/sql" \
           flyway/flyway:9-alpine \
-          -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
+          -url=jdbc:mysql://mysql:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
           -user=root \
           migrate
 
