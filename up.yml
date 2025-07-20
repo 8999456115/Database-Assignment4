@@ -1,31 +1,26 @@
-- name: Set up MySQL and run initial Flyway migration
+---
+- name: Setup MySQL environment and run initial migrations
   hosts: localhost
   connection: local
-  gather_facts: no
-
   tasks:
-    - name: Ensure Docker is running
-      shell: |
-        sudo systemctl start docker || true
-
     - name: Start MySQL container
-      shell: |
-        docker run -d --name flyway-mysql \
-          -e MYSQL_ROOT_PASSWORD=rootpass \
-          -e MYSQL_DATABASE=subscribers \
-          -e MYSQL_USER=subuser \
-          -e MYSQL_PASSWORD=subpass \
-          -p 3306:3306 \
-          mysql:5.7
-
-    - name: Wait for MySQL to be ready
-      wait_for:
-        host: 127.0.0.1
-        port: 3306
-        delay: 10
-        timeout: 60
+      community.docker.docker_container:
+        name: database-assignment4-db-1
+        image: mysql:5.7
         state: started
+        restart_policy: unless-stopped
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: subscribers
+          MYSQL_USER: subuser
+          MYSQL_PASSWORD: subpass
+        published_ports:
+          - "3306:3306"
 
-    - name: Run Flyway migration locally using nektos/act
+    - name: Run initial Flyway migrations using docker
       shell: |
-        act -j flyway-init || echo "Run GitHub Actions manually if act not available"
+        docker run --rm \
+          --network container:database-assignment4-db-1 \
+          -v {{ playbook_dir }}/sql:/flyway/sql \
+          -v {{ playbook_dir }}/flyway.conf:/flyway/conf/flyway.conf \
+          flyway/flyway migrate

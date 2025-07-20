@@ -1,9 +1,14 @@
-- name: Tear down MySQL container
+---
+- name: Remove MySQL environment
   hosts: localhost
   connection: local
-  gather_facts: no
-
   tasks:
-    - name: Stop and remove MySQL container
-      shell: |
-        docker rm -f flyway-mysql || echo "MySQL container not found or already removed"
+    - name: Stop MySQL container
+      community.docker.docker_container:
+        name: database-assignment4-db-1
+        state: stopped
+
+    - name: Remove MySQL container
+      community.docker.docker_container:
+        name: database-assignment4-db-1
+        state: absent
