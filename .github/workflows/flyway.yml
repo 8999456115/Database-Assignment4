@@ -49,6 +49,12 @@ jobs:
         ls -la migrations/init/
         ls -la migrations/incremental/
 
+    - name: Create database if not exists
+      run: |
+        echo "Creating database if not exists..."
+        docker exec database-assignment4-db-1 mysql -u root -e "CREATE DATABASE IF NOT EXISTS subscribers;"
+        echo "Database created successfully!"
+
     - name: Run Initial Migrations
       run: |
         echo "Running initial migrations..."
