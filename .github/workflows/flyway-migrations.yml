@@ -3,9 +3,9 @@
     docker run --rm \
       -v ${{ github.workspace }}/sql:/flyway/sql \
       flyway/flyway:10 \
-      -url=jdbc:mysql://localhost:3306/$DB_NAME \
-      -user=$DB_USER \
-      -password=$DB_PASSWORD \
+      -url=jdbc:mysql://localhost:3306/${{ env.DB_NAME }} \
+      -user=${{ env.DB_USER }} \
+      -password=${{ env.DB_PASSWORD }} \
       migrate
   env:
     DB_USER: root
