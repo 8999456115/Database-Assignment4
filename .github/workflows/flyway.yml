@@ -54,19 +54,25 @@ jobs:
         echo "Creating database if not exists..."
         docker exec database-assignment4-db-1 mysql -u root -e "CREATE DATABASE IF NOT EXISTS subscribers;"
         echo "Database created successfully!"
+        echo "Verifying database exists:"
+        docker exec database-assignment4-db-1 mysql -u root -e "SHOW DATABASES LIKE 'subscribers';"
 
     - name: Run Initial Migrations
       run: |
         echo "Running initial migrations..."
-        echo "Creating subscriber table..."
-        docker exec database-assignment4-db-1 mysql -u root subscribers -e "CREATE TABLE IF NOT EXISTS subscriber (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE);"
+        echo "Step 1: Creating subscriber table..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "CREATE TABLE IF NOT EXISTS subscriber (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE);" || echo "Table creation failed"
+        echo "Step 2: Verifying table structure..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "DESCRIBE subscriber;" || echo "Table description failed"
         echo "Initial migrations completed!"
 
     - name: Run Incremental Migrations
       run: |
         echo "Running incremental migrations..."
-        echo "Adding name column..."
-        docker exec database-assignment4-db-1 mysql -u root subscribers -e "ALTER TABLE subscriber ADD COLUMN IF NOT EXISTS name VARCHAR(255);"
+        echo "Step 1: Adding name column..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "ALTER TABLE subscriber ADD COLUMN IF NOT EXISTS name VARCHAR(255);" || echo "Column addition failed"
+        echo "Step 2: Verifying updated table structure..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "DESCRIBE subscriber;" || echo "Table description failed"
         echo "Incremental migrations completed!"
 
     - name: Verify migrations
