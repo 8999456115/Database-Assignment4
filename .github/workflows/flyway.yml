@@ -53,22 +53,20 @@ jobs:
       run: |
         echo "Running initial migrations..."
         docker run --rm \
-          --network host \
-          -v "${{ github.workspace }}/migrations/init:/flyway/sql" \
+          --network container:database-assignment4-db-1 \
+          -v ${{ github.workspace }}/migrations/init:/flyway/sql \
+          -v ${{ github.workspace }}/flyway_simple.conf:/flyway/conf/flyway.conf \
           flyway/flyway:9-alpine \
-          -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
-          -user root \
           migrate
 
     - name: Run Incremental Flyway Migrations
       run: |
         echo "Running incremental migrations..."
         docker run --rm \
-          --network host \
-          -v "${{ github.workspace }}/migrations/incremental:/flyway/sql" \
+          --network container:database-assignment4-db-1 \
+          -v ${{ github.workspace }}/migrations/incremental:/flyway/sql \
+          -v ${{ github.workspace }}/flyway_simple.conf:/flyway/conf/flyway.conf \
           flyway/flyway:9-alpine \
-          -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
-          -user root \
           migrate
 
     - name: Verify migrations
