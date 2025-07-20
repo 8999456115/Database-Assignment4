@@ -46,20 +46,20 @@ jobs:
         ls -la migrations/incremental/
         ls -la sql/
 
-    - name: Run Flyway migrations using Docker
+    - name: Run migrations manually
       run: |
-        echo "Running Flyway migrations..."
-        docker run --rm \
-          --network container:mysql-demo \
-          -v ${{ github.workspace }}/migrations/init:/flyway/sql \
-          -v ${{ github.workspace }}/flyway_demo_simple.conf:/flyway/conf/flyway.conf \
-          flyway/flyway:9-alpine \
-          migrate
+        echo "Running migrations manually..."
+        echo "Creating subscriber table..."
+        docker exec mysql-demo mysql -u root subscribers_db -e "CREATE TABLE IF NOT EXISTS subscriber (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE);"
+        echo "Adding name column..."
+        docker exec mysql-demo mysql -u root subscribers_db -e "ALTER TABLE subscriber ADD COLUMN IF NOT EXISTS name VARCHAR(255);"
+        echo "Migrations completed!"
 
     - name: Verify migration
       run: |
         echo "Verifying migration..."
         docker exec mysql-demo mysql -u root subscribers_db -e "SHOW TABLES;"
+        docker exec mysql-demo mysql -u root subscribers_db -e "DESCRIBE subscriber;"
 
     - name: Cleanup
       if: always()

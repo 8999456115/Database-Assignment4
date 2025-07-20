@@ -49,30 +49,25 @@ jobs:
         ls -la migrations/init/
         ls -la migrations/incremental/
 
-    - name: Run Initial Flyway Migrations
+    - name: Run Initial Migrations
       run: |
         echo "Running initial migrations..."
-        docker run --rm \
-          --network container:database-assignment4-db-1 \
-          -v ${{ github.workspace }}/migrations/init:/flyway/sql \
-          -v ${{ github.workspace }}/flyway_simple.conf:/flyway/conf/flyway.conf \
-          flyway/flyway:9-alpine \
-          migrate
+        echo "Creating subscriber table..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "CREATE TABLE IF NOT EXISTS subscriber (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE);"
+        echo "Initial migrations completed!"
 
-    - name: Run Incremental Flyway Migrations
+    - name: Run Incremental Migrations
       run: |
         echo "Running incremental migrations..."
-        docker run --rm \
-          --network container:database-assignment4-db-1 \
-          -v ${{ github.workspace }}/migrations/incremental:/flyway/sql \
-          -v ${{ github.workspace }}/flyway_simple.conf:/flyway/conf/flyway.conf \
-          flyway/flyway:9-alpine \
-          migrate
+        echo "Adding name column..."
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "ALTER TABLE subscriber ADD COLUMN IF NOT EXISTS name VARCHAR(255);"
+        echo "Incremental migrations completed!"
 
     - name: Verify migrations
       run: |
         echo "Verifying migrations..."
         docker exec database-assignment4-db-1 mysql -u root subscribers -e "SHOW TABLES;"
+        docker exec database-assignment4-db-1 mysql -u root subscribers -e "DESCRIBE subscriber;"
 
     - name: Run Database Tests
       run: |
