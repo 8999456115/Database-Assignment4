@@ -19,14 +19,19 @@ jobs:
       run: |
         docker run -d \
           --name database-assignment4-db-1 \
-          -e MYSQL_ROOT_PASSWORD=root \
+          -e MYSQL_ROOT_PASSWORD=root123 \
           -e MYSQL_DATABASE=subscribers \
+          -e MYSQL_USER=subuser \
+          -e MYSQL_PASSWORD=subpass \
           -p 3306:3306 \
-          mysql:8.0
+          mysql:8.0 \
+          --default-authentication-plugin=mysql_native_password
 
     - name: Wait for MySQL to be ready
       run: |
-        timeout 60 bash -c 'until docker exec database-assignment4-db-1 mysqladmin ping -h localhost -u root -proot --silent; do sleep 1; done'
+        echo "Waiting for MySQL to be ready..."
+        timeout 120 bash -c 'until docker exec database-assignment4-db-1 mysqladmin ping -h localhost -u root -proot123 --silent; do echo "Waiting..."; sleep 2; done'
+        echo "MySQL is ready!"
 
     - name: Debug MySQL container
       run: |
@@ -34,15 +39,10 @@ jobs:
         docker ps
         echo "Checking MySQL logs:"
         docker logs database-assignment4-db-1
-        echo "Testing MySQL connection:"
-        docker exec database-assignment4-db-1 mysql -u root -proot -e "SELECT 1;"
-
-    - name: Create database and user
-      run: |
-        docker exec database-assignment4-db-1 mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS subscribers;"
-        docker exec database-assignment4-db-1 mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'subuser'@'%' IDENTIFIED BY 'subpass';"
-        docker exec database-assignment4-db-1 mysql -u root -proot -e "GRANT ALL PRIVILEGES ON subscribers.* TO 'subuser'@'%';"
-        docker exec database-assignment4-db-1 mysql -u root -proot -e "FLUSH PRIVILEGES;"
+        echo "Testing MySQL connection with root:"
+        docker exec database-assignment4-db-1 mysql -u root -proot123 -e "SELECT 'Root connection successful' as status;"
+        echo "Testing MySQL connection with subuser:"
+        docker exec database-assignment4-db-1 mysql -u subuser -psubpass -e "SELECT 'Subuser connection successful' as status;"
 
     - name: Run Initial Flyway Migrations
       run: |
@@ -52,7 +52,7 @@ jobs:
           flyway/flyway:9-alpine \
           -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
           -user=root \
-          -password=root \
+          -password=root123 \
           migrate
 
     - name: Run Incremental Flyway Migrations
@@ -63,7 +63,7 @@ jobs:
           flyway/flyway:9-alpine \
           -url=jdbc:mysql://localhost:3306/subscribers?allowPublicKeyRetrieval=true&useSSL=false \
           -user=root \
-          -password=root \
+          -password=root123 \
           migrate
 
     - name: Run Database Tests
