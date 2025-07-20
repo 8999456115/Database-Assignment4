@@ -1,63 +1,13 @@
-name: Flyway Migration Pipeline
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  flyway:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: demo
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    env:
-      DB_HOST: 127.0.0.1
-      DB_PORT: 3306
-      DB_NAME: demo
-      DB_USER: root
-      DB_PASSWORD: root
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Wait for MySQL to be ready
-        run: |
-          for i in {1..30}; do
-            if mysqladmin ping -h"$DB_HOST" -u"$DB_USER" -p"$DB_PASSWORD" --silent; then
-              echo "MySQL is up!"
-              break
-            fi
-            echo "Waiting for MySQL..."
-            sleep 2
-          done
-
-      - name: Run Flyway migrations
-        uses: flyway/flyway-action@v2
-        with:
-          url: jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME
-          user: $DB_USER
-          password: $DB_PASSWORD
-          locations: filesystem:./sql
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: pip install mysql-connector-python
-
-      - name: Run unit tests
-        run: python3 test_subscribers.py
+- name: Run Flyway migrations using Docker
+  run: |
+    docker run --rm \
+      -v ${{ github.workspace }}/sql:/flyway/sql \
+      flyway/flyway:10 \
+      -url=jdbc:mysql://localhost:3306/$DB_NAME \
+      -user=$DB_USER \
+      -password=$DB_PASSWORD \
+      migrate
+  env:
+    DB_USER: root
+    DB_PASSWORD: root
+    DB_NAME: subscribers_db
