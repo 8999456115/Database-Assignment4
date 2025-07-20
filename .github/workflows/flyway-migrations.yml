@@ -25,7 +25,7 @@ jobs:
     - name: Wait for MySQL to be ready
       run: |
         echo "Waiting for MySQL to be ready..."
-        timeout 120 bash -c 'until docker exec mysql-demo mysqladmin ping -h localhost -u root -proot123 --silent; do echo "Waiting..."; sleep 2; done'
+        timeout 120 bash -c 'until docker exec mysql-demo mysqladmin ping -h localhost -u root --silent; do echo "Waiting..."; sleep 2; done'
         echo "MySQL is ready!"
 
     - name: Debug MySQL container
@@ -34,10 +34,10 @@ jobs:
         docker ps
         echo "Checking MySQL logs:"
         docker logs mysql-demo
-        echo "Testing MySQL connection with root:"
-        docker exec mysql-demo mysql -u root -proot123 -e "SELECT 'Root connection successful' as status;"
+        echo "Testing MySQL connection with root (no password):"
+        docker exec mysql-demo mysql -u root -e "SELECT 'Root connection successful' as status;"
         echo "Checking available databases:"
-        docker exec mysql-demo mysql -u root -proot123 -e "SHOW DATABASES;"
+        docker exec mysql-demo mysql -u root -e "SHOW DATABASES;"
 
     - name: List available migration files
       run: |
@@ -59,7 +59,7 @@ jobs:
     - name: Verify migration
       run: |
         echo "Verifying migration..."
-        docker exec mysql-demo mysql -u root -proot123 subscribers_db -e "SHOW TABLES;"
+        docker exec mysql-demo mysql -u root subscribers_db -e "SHOW TABLES;"
 
     - name: Cleanup
       if: always()
